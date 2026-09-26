@@ -831,6 +831,7 @@
   // Studio / Settings Modal logic
   function setupSettingsModal() {
     const modal = document.getElementById('settingsModal');
+    if (!modal) return;
     const openBtn = document.getElementById('settingsBtn');
     const closeBtn = document.getElementById('closeSettingsBtn');
     const saveBtn = document.getElementById('saveConfigBtn');
