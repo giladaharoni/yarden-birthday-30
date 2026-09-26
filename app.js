@@ -212,6 +212,15 @@
       }
     }
 
+    // Check URL search params for easy code testing (?code=...&amount=...)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('code')) baseConfig.giftCode = urlParams.get('code');
+      if (urlParams.has('amount')) baseConfig.giftAmount = urlParams.get('amount');
+      if (urlParams.has('url')) baseConfig.giftUrl = urlParams.get('url');
+      if (urlParams.has('brand')) baseConfig.giftBrand = urlParams.get('brand');
+    } catch (e) {}
+
     config = baseConfig;
     applyConfigToUI();
   }
@@ -1006,6 +1015,28 @@
         isSoundEnabled = !isSoundEnabled;
         if (soundIcon) soundIcon.textContent = isSoundEnabled ? '🔊' : '🔇';
         showToast(isSoundEnabled ? "הסאונד הופעל 🔊" : "הסאונד הושתק 🔇");
+      });
+    }
+
+    // Secret Admin Shortcut: Tap the birthday badge 5 times quickly to update voucher code directly on mobile!
+    const headerBadge = document.getElementById('headerBadge');
+    if (headerBadge) {
+      let tapCount = 0;
+      let tapTimer = null;
+      headerBadge.addEventListener('click', () => {
+        tapCount++;
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 1800);
+        if (tapCount >= 5) {
+          tapCount = 0;
+          const newCode = prompt("🔐 עדכון סודי של קוד השובר:", config.giftCode || '');
+          if (newCode && newCode.trim()) {
+            config.giftCode = newCode.trim();
+            saveConfig(config);
+            applyConfigToUI();
+            showToast("קוד השובר עודכן בהצלחה! 🎁");
+          }
+        }
       });
     }
 
