@@ -188,20 +188,45 @@
     return "שקף 31! הגעת לסוף... כמעט! 😉";
   }
 
+  // Robust Base64 & UTF-8 URL-safe decoder
+  function decodePayload(str) {
+    if (!str) return null;
+    try {
+      let raw = decodeURIComponent(str.trim());
+      raw = raw.replace(/-/g, '+').replace(/_/g, '/');
+      while (raw.length % 4) {
+        raw += '=';
+      }
+      const binaryStr = atob(raw);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const decodedUtf8 = new TextDecoder().decode(bytes);
+      if (decodedUtf8.startsWith('%7B') || decodedUtf8.includes('%22')) {
+        return JSON.parse(decodeURIComponent(decodedUtf8));
+      }
+      return JSON.parse(decodedUtf8);
+    } catch (e) {
+      console.warn("Payload decode error:", e);
+      return null;
+    }
+  }
+
   // Load and merge configuration
   function loadConfig() {
     let baseConfig = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG || {}));
-    
-    // 1. Check URL Hash for secure gift payload (#gift=... or #data=...)
     let hasSecurePayload = false;
+
+    // 1. Check URL Hash (#gift=... or #code=...)
     if (window.location.hash) {
       const hashStr = window.location.hash.substring(1);
       
       // Format 1: #gift=<base64-json>
-      if (hashStr.startsWith('gift=')) {
-        try {
-          const raw = hashStr.replace('gift=', '');
-          const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+      if (hashStr.includes('gift=')) {
+        const raw = hashStr.split('gift=')[1].split('&')[0];
+        const decoded = decodePayload(raw);
+        if (decoded) {
           if (decoded.code) baseConfig.giftCode = decoded.code;
           if (decoded.amount) baseConfig.giftAmount = decoded.amount;
           if (decoded.url) baseConfig.giftUrl = decoded.url;
@@ -209,32 +234,17 @@
           if (decoded.brandName) baseConfig.giftBrandName = decoded.brandName;
           if (typeof decoded.isPrankCodeFirst !== 'undefined') baseConfig.isPrankCodeFirst = decoded.isPrankCodeFirst;
           hasSecurePayload = true;
-        } catch (e) {
-          console.warn("Could not parse secure gift payload:", e);
-        }
-      } 
-      // Format 2: #data=<base64-full-config>
-      else if (hashStr.startsWith('data=')) {
-        try {
-          const raw = hashStr.replace('data=', '');
-          const decoded = JSON.parse(decodeURIComponent(atob(raw)));
-          baseConfig = Object.assign(baseConfig, decoded);
-          hasSecurePayload = true;
-        } catch (e) {
-          console.warn("Could not decode hash configuration:", e);
         }
       }
-      // Format 3: #code=...&amount=...
-      else if (hashStr.includes('code=')) {
-        try {
-          const hashParams = new URLSearchParams(hashStr);
-          if (hashParams.has('code')) baseConfig.giftCode = hashParams.get('code');
-          if (hashParams.has('amount')) baseConfig.giftAmount = hashParams.get('amount');
-          if (hashParams.has('url')) baseConfig.giftUrl = hashParams.get('url');
-          if (hashParams.has('brand')) baseConfig.giftBrand = hashParams.get('brand');
-          hasSecurePayload = true;
-        } catch (e) {}
-      }
+
+      // Format 2: Direct hash params #code=...&amount=...
+      try {
+        const hashParams = new URLSearchParams(hashStr);
+        if (hashParams.has('code')) { baseConfig.giftCode = hashParams.get('code'); hasSecurePayload = true; }
+        if (hashParams.has('amount')) { baseConfig.giftAmount = hashParams.get('amount'); hasSecurePayload = true; }
+        if (hashParams.has('url')) { baseConfig.giftUrl = hashParams.get('url'); hasSecurePayload = true; }
+        if (hashParams.has('brand')) { baseConfig.giftBrand = hashParams.get('brand'); hasSecurePayload = true; }
+      } catch (e) {}
     }
 
     // 2. Check URL search params (?code=...&amount=...)
@@ -246,15 +256,22 @@
       if (urlParams.has('brand')) { baseConfig.giftBrand = urlParams.get('brand'); hasSecurePayload = true; }
     } catch (e) {}
 
-    // Security enhancement: Immediately wipe sensitive payload from browser address bar
-    if (hasSecurePayload && window.history && window.history.replaceState) {
+    // Security & Persistence:
+    if (hasSecurePayload) {
+      // Save to localStorage so refreshing the page preserves the voucher!
       try {
-        window.history.replaceState(null, '', window.location.pathname);
+        localStorage.setItem('sister_prank_config_v3', JSON.stringify(baseConfig));
       } catch (e) {}
-    }
 
-    // 3. Fallback to localStorage if no URL payload
-    if (!hasSecurePayload) {
+      // Clean address bar unless in test/preview mode
+      const isTestMode = window.location.hash.includes('test=1') || window.location.search.includes('test=1');
+      if (!isTestMode && window.history && window.history.replaceState) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname);
+        } catch (e) {}
+      }
+    } else {
+      // 3. Fallback to localStorage if no URL payload
       const saved = localStorage.getItem('sister_prank_config_v3');
       if (saved) {
         try {
@@ -1048,6 +1065,17 @@
   // App Initialization
   function init() {
     loadConfig();
+
+    // Instant test mode shortcut: jumps directly to finale screen to test gift card instantly (?test=1 or #test=1)
+    if (window.location.hash.includes('test=1') || window.location.search.includes('test=1')) {
+      setTimeout(() => {
+        const introScreen = document.getElementById('introScreen');
+        const blessingScreen = document.getElementById('blessingScreen');
+        if (introScreen) introScreen.style.display = 'none';
+        if (blessingScreen) blessingScreen.style.display = 'none';
+        showFinale();
+      }, 60);
+    }
 
     // Sound toggle
     const soundBtn = document.getElementById('soundToggleBtn');
