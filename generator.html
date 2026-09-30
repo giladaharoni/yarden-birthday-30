@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מחולל קישור שובר מאובטח לירדן 🔐</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      padding: 24px 16px;
+      justify-content: flex-start;
+      min-height: 100vh;
+    }
+    .gen-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 20px 45px rgba(123, 44, 191, 0.18);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .gen-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+      justify-content: center;
+    }
+    .security-badge {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      color: #065f46;
+      line-height: 1.5;
+    }
+    .output-box {
+      display: none;
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .link-text {
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #ffffff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      color: #0f172a;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gen-card">
+    <h1 class="gen-title">
+      <span>🔐</span>
+      <span>מחולל קישור שובר מאובטח</span>
+    </h1>
+
+    <div class="security-badge">
+      🛡️ <strong>הקוד שלך מוגן ב-100%:</strong><br>
+      קוד השובר שתוזן כאן <strong>לעולם לא יישמר ב-GitHub ולא בשום שרת</strong>. הוא מוטמע רק בתוך הקישור שיישלח ישירות לירדן בוואטסאפ, ונמחק אוטומטית משורת הכתובת בשנייה שהיא פותחת את הדף!
+    </div>
+
+    <form id="genForm" onsubmit="generateLink(event)" style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div class="form-group">
+        <label class="form-label" for="inpCode">קוד השובר האמיתי (לדוגמה מ-BuyMe):</label>
+        <input class="form-input" id="inpCode" type="text" placeholder="למשל: BUYME-9876-5432" required autofocus>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="inpBrand">סוג המתנה:</label>
+          <select class="form-select" id="inpBrand">
+            <option value="buyme">BuyMe All 🎁</option>
+            <option value="zara">Zara 👗</option>
+            <option value="terminalx">Terminal X 👟</option>
+            <option value="story">Story 🛍️</option>
+            <option value="amazon">Amazon 📦</option>
+            <option value="starbucks">קפה ומאפה ☕</option>
+            <option value="custom">מותג אחר ✨</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="inpAmount">סכום השובר:</label>
+          <input class="form-input" id="inpAmount" type="text" value="₪300" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="inpUrl">קישור למימוש השובר:</label>
+        <input class="form-input" id="inpUrl" type="url" value="https://buyme.co.il" required>
+      </div>
+
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+          <input type="checkbox" id="inpPrank" checked>
+          <span>הפעל מתיחת קוד שגוי (מציג תחילה 'ERROR 404: נוכה מס אחות')</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary-action" style="padding: 14px; font-size: 1.05rem; margin-top: 4px;">
+        <span>צור קישור מאובטח לירדן 🎁</span>
+      </button>
+
+    </form>
+
+    <div class="output-box" id="outputBox">
+      <div style="font-weight: 700; color: #15803d; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+        <span>✅</span>
+        <span>הקישור המאובטח מוכן לשליחה!</span>
+      </div>
+
+      <div class="link-text" id="finalLinkText"></div>
+
+      <div style="display: flex; gap: 10px; margin-top: 4px;">
+        <button class="btn-primary-action" id="copyFinalBtn" onclick="copyLink()" style="flex: 1; padding: 10px;">
+          <span>📋 העתק לוואטסאפ</span>
+        </button>
+        <a class="btn-secondary-action" id="testFinalBtn" href="#" target="_blank" style="padding: 10px 16px; font-size: 0.9rem;">
+          <span>🔗 בדיקה בחלון חדש</span>
+        </a>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 8px;">
+      <a href="./" style="font-size: 0.85rem; color: var(--text-muted); text-decoration: none;">
+        ← חזרה לאתר הברכה הראשי
+      </a>
+    </div>
+
+  </div>
+
+  <div class="share-toast" id="shareToast">
+    <span>✅</span>
+    <span id="toastMessage">הקישור הועתק!</span>
+  </div>
+
+  <script>
+    let currentShareUrl = '';
+
+    function generateLink(e) {
+      e.preventDefault();
+      
+      const code = document.getElementById('inpCode').value.trim();
+      const brand = document.getElementById('inpBrand').value;
+      const brandNames = {
+        buyme: 'BuyMe All',
+        zara: 'Zara',
+        terminalx: 'Terminal X',
+        story: 'Story Online',
+        amazon: 'Amazon',
+        starbucks: 'קפה ומאפה',
+        custom: 'מתנה לבחירתך'
+      };
+      const amount = document.getElementById('inpAmount').value.trim() || '₪300';
+      const url = document.getElementById('inpUrl').value.trim() || 'https://buyme.co.il';
+      const isPrank = document.getElementById('inpPrank').checked;
+
+      const payload = {
+        code: code,
+        amount: amount,
+        brand: brand,
+        brandName: brandNames[brand] || 'מתנה',
+        url: url,
+        isPrankCodeFirst: isPrank
+      };
+
+      const jsonStr = JSON.stringify(payload);
+      const encoded = btoa(encodeURIComponent(jsonStr));
+
+      // Construct baseUrl pointing to index.html
+      const origin = window.location.origin;
+      const pathname = window.location.pathname.replace('generator.html', '');
+      currentShareUrl = `${origin}${pathname}#gift=${encoded}`;
+
+      document.getElementById('finalLinkText').textContent = currentShareUrl;
+      document.getElementById('testFinalBtn').href = currentShareUrl;
+      document.getElementById('outputBox').style.display = 'flex';
+      
+      // Auto copy
+      copyLink();
+    }
+
+    function copyLink() {
+      if (!currentShareUrl) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentShareUrl).then(() => {
+          showToast("הקישור המאובטח הועתק ללוח! שלח לירדן 📲");
+        });
+      } else {
+        prompt("העתק את הקישור:", currentShareUrl);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('shareToast');
+      const toastMsg = document.getElementById('toastMessage');
+      if (!toast || !toastMsg) return;
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 2800);
+    }
+  </script>
+</body>
+</html>

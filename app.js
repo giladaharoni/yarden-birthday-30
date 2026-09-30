@@ -192,17 +192,69 @@
   function loadConfig() {
     let baseConfig = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG || {}));
     
-    // Check URL Hash for shared config
-    if (window.location.hash.startsWith('#data=')) {
-      try {
-        const encoded = window.location.hash.replace('#data=', '');
-        const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
-        baseConfig = Object.assign(baseConfig, decoded);
-      } catch (e) {
-        console.warn("Could not decode hash configuration:", e);
+    // 1. Check URL Hash for secure gift payload (#gift=... or #data=...)
+    let hasSecurePayload = false;
+    if (window.location.hash) {
+      const hashStr = window.location.hash.substring(1);
+      
+      // Format 1: #gift=<base64-json>
+      if (hashStr.startsWith('gift=')) {
+        try {
+          const raw = hashStr.replace('gift=', '');
+          const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+          if (decoded.code) baseConfig.giftCode = decoded.code;
+          if (decoded.amount) baseConfig.giftAmount = decoded.amount;
+          if (decoded.url) baseConfig.giftUrl = decoded.url;
+          if (decoded.brand) baseConfig.giftBrand = decoded.brand;
+          if (decoded.brandName) baseConfig.giftBrandName = decoded.brandName;
+          if (typeof decoded.isPrankCodeFirst !== 'undefined') baseConfig.isPrankCodeFirst = decoded.isPrankCodeFirst;
+          hasSecurePayload = true;
+        } catch (e) {
+          console.warn("Could not parse secure gift payload:", e);
+        }
+      } 
+      // Format 2: #data=<base64-full-config>
+      else if (hashStr.startsWith('data=')) {
+        try {
+          const raw = hashStr.replace('data=', '');
+          const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+          baseConfig = Object.assign(baseConfig, decoded);
+          hasSecurePayload = true;
+        } catch (e) {
+          console.warn("Could not decode hash configuration:", e);
+        }
       }
-    } else {
-      // Check local storage
+      // Format 3: #code=...&amount=...
+      else if (hashStr.includes('code=')) {
+        try {
+          const hashParams = new URLSearchParams(hashStr);
+          if (hashParams.has('code')) baseConfig.giftCode = hashParams.get('code');
+          if (hashParams.has('amount')) baseConfig.giftAmount = hashParams.get('amount');
+          if (hashParams.has('url')) baseConfig.giftUrl = hashParams.get('url');
+          if (hashParams.has('brand')) baseConfig.giftBrand = hashParams.get('brand');
+          hasSecurePayload = true;
+        } catch (e) {}
+      }
+    }
+
+    // 2. Check URL search params (?code=...&amount=...)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('code')) { baseConfig.giftCode = urlParams.get('code'); hasSecurePayload = true; }
+      if (urlParams.has('amount')) { baseConfig.giftAmount = urlParams.get('amount'); hasSecurePayload = true; }
+      if (urlParams.has('url')) { baseConfig.giftUrl = urlParams.get('url'); hasSecurePayload = true; }
+      if (urlParams.has('brand')) { baseConfig.giftBrand = urlParams.get('brand'); hasSecurePayload = true; }
+    } catch (e) {}
+
+    // Security enhancement: Immediately wipe sensitive payload from browser address bar
+    if (hasSecurePayload && window.history && window.history.replaceState) {
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch (e) {}
+    }
+
+    // 3. Fallback to localStorage if no URL payload
+    if (!hasSecurePayload) {
       const saved = localStorage.getItem('sister_prank_config_v3');
       if (saved) {
         try {
@@ -211,15 +263,6 @@
         } catch (e) {}
       }
     }
-
-    // Check URL search params for easy code testing (?code=...&amount=...)
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('code')) baseConfig.giftCode = urlParams.get('code');
-      if (urlParams.has('amount')) baseConfig.giftAmount = urlParams.get('amount');
-      if (urlParams.has('url')) baseConfig.giftUrl = urlParams.get('url');
-      if (urlParams.has('brand')) baseConfig.giftBrand = urlParams.get('brand');
-    } catch (e) {}
 
     config = baseConfig;
     applyConfigToUI();
